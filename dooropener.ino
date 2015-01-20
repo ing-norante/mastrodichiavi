@@ -8,6 +8,7 @@
 #define orange strip.Color(139, 69, 0)
 #define all_off strip.Color(0, 0, 0)
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
+#define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
 
 int timer_before_closing_duration = 100; // 2 seconds * 24 pixels = 48 secs before closing
 
@@ -27,8 +28,9 @@ Stepper stepperMotor(STEPS, dirA, dirB);
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
-// Instantiate a Bounce object
+// Instantiate some bounce objects
 Bounce lockswitchdebouncer = Bounce();
+Bounce nfcdebouncer = Bounce();
 
 
 
@@ -39,6 +41,13 @@ void setup() {
   digitalWrite(lockswitch, HIGH);
   lockswitchdebouncer.attach(lockswitch);
   lockswitchdebouncer.interval(50);
+
+  //Set up the switch from the came rbm21 and his debouncer
+  pinMode(nfcswitch,INPUT);
+  digitalWrite(nfcswitch,HIGH);
+  nfcdebouncer.attach(nfcswitch);
+  nfcdebouncer.interval(50);
+
 
   //Initialize the led ring
   strip.begin();
@@ -73,6 +82,16 @@ void setup() {
 
 void loop() {
 
+  // Update the nfcdebouncer
+  nfcdebouncer.update();
+
+  // Open or close the lock with the stepper motor
+  if ( nfcdebouncer.read() == LOW) {
+    stepperMotor.step(-STEPS); //I used -STEPS to turn in the opposite direction
+  }
+  else {
+
+  }
 }
 
 
