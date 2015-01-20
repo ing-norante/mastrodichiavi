@@ -1,9 +1,9 @@
 #Arduino Door Opener for [OfficineNora](http://www.officinenora.it)#
 This system is designed to open *automatically* the door at Officine Nora Jewlerly workshop in Florence using this hardware:
-* Arduino Uno
-* Stepper Motor
-* Came RMB21
-* Neopixel Led Ring
+* [Arduino Uno r3](http://arduino.cc/en/Main/ArduinoBoardUno)  
+* [Kysan 1124090 Nema 17 Stepper Motor](http://store.arduino.cc/product/MK00742)
+* [Came RMB21 Access control unit](http://www.cameuk.com/files/pdf/rbm21/RBM21_EN.pdf)
+* [NeoPixel Ring - 24 x WS2812 5050 RGB LED with Integrated Drivers](http://www.adafruit.com/product/1586)
 
 When I say *automatically* I mean using the stepper motor to phisically turn the key inside the keylock. The access control is ruled by
 the Came RBM21 with an RFID reader sensor placed near the entrance.
@@ -16,3 +16,14 @@ When you start the Arduino it will:
 * Check the state of the switch sensor:
  * Open => Wait 48 seconds and then fire the Closing routine.
  * Closed => Somebody had already closed the door mechanically. Do nothing.
+
+
+
+
+
+###Libraries Used###
+I tried to use only *official* libraries when available:
+
+* [Bounce](http://playground.arduino.cc/Code/Bounce) - Arduino library that debounces digital inputs
+* [Adafruit NeoPixel library](https://github.com/adafruit/Adafruit_NeoPixel) - Arduino library for controlling single-wire-based LED pixels and strip
+* [SMLib](http://playground.arduino.cc/Code/SMlib) - A simple library for finite state machines
