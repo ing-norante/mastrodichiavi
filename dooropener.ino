@@ -7,7 +7,7 @@
 #define all_off strip.Color(0, 0, 0)
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
 
-int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs before closing
+int timer_before_closing_duration = 100; // 2 seconds * 24 pixels = 48 secs before closing
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
@@ -23,20 +23,23 @@ void setup() {
   lockswitchdebouncer.attach(lockswitch);
   lockswitchdebouncer.interval(50);
 
+  //Initialize the led ring
   strip.begin();
   strip.show();
-  timer_before_closing();
+
+  lockswitchdebouncer.update();
+
+  if (lockswitchdebouncer.read() == LOW){
+    // The lock is armed
+    }else{
+      // The lock is NOT armed
+      timer_before_closing();
+  }
 
 }
 
 void loop() {
-  lockswitchdebouncer.update();
 
-  if (lockswitchdebouncer.read() == LOW){
-    colorWipe(orange, 100); // The lock is armed
-  }else{
-    colorWipe(all_off, 100); // The lock is NOT armed
-  }
 }
 
 
