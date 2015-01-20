@@ -1,5 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Bounce2.h>
+#include <Stepper.h>
+
 
 
 #define neopixel_pin 6  // the digital pin the neopixel ring is connected to
@@ -9,8 +11,23 @@
 
 int timer_before_closing_duration = 100; // 2 seconds * 24 pixels = 48 secs before closing
 
+//Defining the motor shield pins
+const int pwmA = 3;
+const int pwmB = 11;
+const int brakeA = 9;
+const int brakeB = 8;
+const int dirA = 12;
+const int dirB = 13;
+
+// Steps 200 is a complete round
+const int STEPS = 200;
+
+// Initialize the Stepper
+Stepper stepperMotor(STEPS, dirA, dirB);
+
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
+// Instantiate a Bounce object
 Bounce lockswitchdebouncer = Bounce();
 
 
@@ -27,6 +44,21 @@ void setup() {
   strip.begin();
   strip.show();
 
+  // Turn on pulse width modulation
+  pinMode(pwmA, OUTPUT);
+  digitalWrite(pwmA, HIGH);
+  pinMode(pwmB, OUTPUT);
+  digitalWrite(pwmB, HIGH);
+
+  // Unleash the breaks
+  pinMode(brakeA, OUTPUT);
+  digitalWrite(brakeA, LOW);
+  pinMode(brakeB, OUTPUT);
+  digitalWrite(brakeB, LOW);
+
+  // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
+  stepperMotor.setSpeed(65);
+
   lockswitchdebouncer.update();
 
   if (lockswitchdebouncer.read() == LOW){
@@ -34,7 +66,8 @@ void setup() {
     }else{
       // The lock is NOT armed
       timer_before_closing();
-  }
+      stepperMotor.step(STEPS);
+    }
 
 }
 

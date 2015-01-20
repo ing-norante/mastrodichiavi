@@ -2,6 +2,7 @@
 This system is designed to open *automatically* the door at Officine Nora Jewlerly workshop in Florence using this hardware:
 * [Arduino Uno r3](http://arduino.cc/en/Main/ArduinoBoardUno)  
 * [Kysan 1124090 Nema 17 Stepper Motor](http://store.arduino.cc/product/MK00742)
+* [Arduino Motor Shield Rev3](http://store.arduino.cc/product/A000079)
 * [Came RMB21 Access control unit](http://www.cameuk.com/files/pdf/rbm21/RBM21_EN.pdf)
 * [NeoPixel Ring - 24 x WS2812 5050 RGB LED with Integrated Drivers](http://www.adafruit.com/product/1586)
 
@@ -27,3 +28,4 @@ I tried to use only *official* libraries when available:
 * [Bounce](http://playground.arduino.cc/Code/Bounce) - Arduino library that debounces digital inputs
 * [Adafruit NeoPixel library](https://github.com/adafruit/Adafruit_NeoPixel) - Arduino library for controlling single-wire-based LED pixels and strip
 * [SMLib](http://playground.arduino.cc/Code/SMlib) - A simple library for finite state machines
+* [Stepper](http://arduino.cc/en/reference/stepper) - A stepper library to control control unipolar or bipolar stepper motors
