@@ -1,12 +1,11 @@
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 6  // the digital pin the data line is connected to
-#define hi_gold strip.Color(255, 215, 0) 
-#define goldenrod strip.Color(218,165,32)
+#define neopixel_pin 6  // the digital pin the data line is connected to
+#define orange strip.Color(139, 69, 0)
 #define all_off strip.Color(0, 0, 0)
 int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs before closing
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
 
 
@@ -21,8 +20,8 @@ void loop() {
 
 
 void timer_before_closing(){
-  fade_up(100, 30, 255, 69, 0); //golden rod(255,69,0)
-  colorWipe(hi_gold, timer_before_closing_duration); // Gold
+  fade_up(100, 20, 238, 238, 0); //yellow
+  colorWipe(orange, timer_before_closing_duration); // orange
   colorWipe(all_off, 100); // Off
 }//timer_before_closing
 
