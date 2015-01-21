@@ -12,6 +12,7 @@
 #define med_red strip.Color(20, 0, 0)
 #define med_green strip.Color(0, 20, 0)
 #define hi_red strip.Color(40, 0, 0)
+#define hi_green strip.Color(0, 40,0)
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
 #define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
 
@@ -81,9 +82,9 @@ void setup() {
     }else{
       // The lock is NOT armed
 
-      timer_before_closing();
+      //timer_before_closing();
       //stepperMotor.step(STEPS);
-      close_lock();
+      turn_key("close");
   }
 
   randomSeed(analogRead(0));
@@ -100,7 +101,7 @@ void loop() {
     // Check if button is still low after debounce.
     newState = digitalRead(nfcswitch);
     if (newState == LOW) {
-      close_lock();
+      turn_key("open");
     }
   }
 
@@ -109,27 +110,59 @@ void loop() {
 }
 
 
-void close_lock(){
+void turn_key(String direction){
 
   uint16_t i,j;
 
-  //Two turns
+  //Two turns...
   for( j=0; j<2; j++){
     for (i=0; i< strip.numPixels();i++){
-      strip.setPixelColor(i, random_color());
+      switch(j){
+        case 0:
+          if(direction == "close"){
+            strip.setPixelColor(i, low_red);
+          }else{
+            strip.setPixelColor(i, low_green);
+          }
+
+        break;
+
+        case 1:
+          if(direction == "close"){
+            strip.setPixelColor(i, med_red);
+            }else{
+              strip.setPixelColor(i, med_green);
+          }
+        break;
+
+      }
+      if(direction == "close"){
+          stepperMotor.step(-(STEPS / strip.numPixels()));
+        }else{
+          stepperMotor.step(STEPS / strip.numPixels());
+      }
+
       strip.show();
-      stepperMotor.step(STEPS / strip.numPixels());
     }
   }
 
-  //Some fixtures
+  //...and an half
   for (int k=0; k < TURN_FIXTURE; k++){
-    stepperMotor.step(1);
+    if(direction == "close"){
+      stepperMotor.step(-1);
+    }else{
+        stepperMotor.step(1);
+    }
+
   }
 
-  fade_up(100, 20, 40, 0, 0); //hi red
+  if(direction == "close"){
+    fade_up(200, 10, 40, 0, 0); //hi red
+    }else{
+      stepperMotor.step(-1);
+  }
 
-}//close_lock
+}//turn_key
 
 
 // Function to get some random color, to be used with strip.setPixelColor(i, random_color());
@@ -139,7 +172,7 @@ uint32_t random_color(){
   return rnd_color;
 }
 
-
+// This is the function that is fired before the lock gets closed, for some fancy effects on the ledring
 void timer_before_closing(){
   fade_up(100, 20, 238, 238, 0); //yellow
   color_wipe(orange, timer_before_closing_duration); // orange
