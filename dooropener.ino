@@ -177,9 +177,32 @@ uint32_t random_color(){
 
 // This is the function that is fired before the lock gets closed, for some fancy effects on the ledring
 void timer_before_closing(){
-  fade_up(100, 20, 238, 238, 0); //yellow
-  color_wipe(orange, timer_before_closing_duration); // orange
-  //color_wipe(all_off, 100); // Off
+
+  randomSeed(analogRead(0));
+  int trick = random(1,4);
+
+  switch(trick){
+    case 1:
+      theaterChaseRainbow(50); //A 50ms delay corresponds to ~40 sec loop
+    break;
+
+    case 2:
+      theaterChase(random_color(),50); //A 50ms delay corresponds to ~40 sec loop
+    break;
+
+    case 3:
+      rainbow(150); //A 150ms delay corresponds to ~40 sec loop
+    break;
+
+    case 4:
+      rainbowCycle(50); //A 50ms delay corresponds to ~40 sec loop
+    break;
+
+  }
+
+  /*fade_up(100, 20, 238, 238, 0); //yellow
+  color_wipe(orange, timer_before_closing_duration); // orange*/
+
 }//timer_before_closing
 
 
@@ -223,7 +246,7 @@ void rainbow(uint8_t wait) {
 void rainbowCycle(uint8_t wait) {
   uint16_t i, j;
 
-  for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
+  for(j=0; j<256*3; j++) { // 3 cycles of all colors on wheel
     for(i=0; i< strip.numPixels(); i++) {
       strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
     }
@@ -234,7 +257,7 @@ void rainbowCycle(uint8_t wait) {
 
 //Theatre-style crawling lights.
 void theaterChase(uint32_t c, uint8_t wait) {
-  for (int j=0; j<10; j++) {  //do 10 cycles of chasing
+  for (int j=0; j<250; j++) {  //do 250 cycles of chasing
     for (int q=0; q < 3; q++) {
       for (int i=0; i < strip.numPixels(); i=i+3) {
         strip.setPixelColor(i+q, c);    //turn every third pixel on
