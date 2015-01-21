@@ -11,14 +11,17 @@ the Came RBM21 with an RFID reader sensor placed near the entrance.
 
 ###Basic functioning###
 The Arduino has a power switch and a switch sensor placed inside the keylock to detect if the lock is armed or not. The power switch is used
-to start the Arduino, if the power switch is on off the Arduino will not be working and the door will be opened manually or via the RBM21.
+to start the Arduino, if the power switch is *off* the Arduino will not be working and the door will be opened manually or via the RBM21.
 When you start the Arduino it will:
 
 * Check the state of the switch sensor:
- * Open => Wait 48 seconds and then fire the Closing routine.
+ * Open => Wait ~40 seconds and then fire the Closing routine.
  * Closed => Somebody had already closed the door mechanically. Do nothing.
 
-
+####Closing Routine####
+This is a function needed to let the Arduino wait ~40 seconds before closing the door.
+This is because we have a security system that has the same timer before getting armed. During this time it's funny to show some tricks on the
+led ring that's why timer_before_closing() has some random scenario to amuse you during the wait.  
 
 
 
