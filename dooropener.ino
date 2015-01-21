@@ -7,6 +7,11 @@
 #define neopixel_pin 6  // the digital pin the neopixel ring is connected to
 #define orange strip.Color(139, 69, 0)
 #define all_off strip.Color(0, 0, 0)
+#define low_red strip.Color(3, 0, 0)
+#define low_green strip.Color(0, 3, 0)
+#define med_red strip.Color(20, 0, 0)
+#define med_green strip.Color(0, 20, 0)
+#define hi_red strip.Color(40, 0, 0)
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
 #define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
 
@@ -21,7 +26,8 @@ const int dirA = 12;
 const int dirB = 13;
 
 // Steps 200 is a complete round
-const int STEPS = 200;
+const int STEPS = 208;
+const int TURN_FIXTURE = 108;
 
 // Initialize the Stepper
 Stepper stepperMotor(STEPS, dirA, dirB);
@@ -74,10 +80,13 @@ void setup() {
     // The lock is armed
     }else{
       // The lock is NOT armed
-      timer_before_closing();
-      stepperMotor.step(STEPS);
-    }
 
+      timer_before_closing();
+      //stepperMotor.step(STEPS);
+      close_lock();
+  }
+
+  randomSeed(analogRead(0));
 }
 
 void loop() {
@@ -87,7 +96,7 @@ void loop() {
 
   // Open or close the lock with the stepper motor
   if ( nfcdebouncer.read() == LOW) {
-    stepperMotor.step(-STEPS); //I used -STEPS to turn in the opposite direction
+    close_lock();
   }
   else {
 
@@ -95,10 +104,51 @@ void loop() {
 }
 
 
+void close_lock(){
+
+  uint16_t i,j;
+
+  //Two turns
+  for( j=0; j<2; j++){
+    for (i=0; i< strip.numPixels();i++){
+      strip.setPixelColor(i, random_color());
+      strip.show();
+      stepperMotor.step(STEPS / strip.numPixels());
+    }
+  }
+
+  //Some fixtures
+  for (int k=0; k < TURN_FIXTURE; k++){
+    stepperMotor.step(1);
+  }
+
+  fade_up(100, 20, 40, 0, 0); //hi red
+
+  /*for (j=0; j<2; j++) {
+    for(i=0; i<strip.numPixels()+3; i++) {
+      if (i<strip.numPixels()) strip.setPixelColor(i, hi_red);
+      if ((i-1 >= 0) && (i-1 < strip.numPixels())) strip.setPixelColor(i-1, med_red);
+      if ((i-2 >= 0) && (i-2 < strip.numPixels())) strip.setPixelColor(i-2, low_red);
+      if ((i-3 >= 0) && (i-3 < strip.numPixels())) strip.setPixelColor(i-3, med_green);
+      strip.show();
+      delay(50);
+    }
+  }*/
+}//close_lock
+
+
+// Function to get some random color, to be used with strip.setPixelColor(i, random_color());
+uint32_t random_color(){
+  long R,B,G;
+  uint32_t rnd_color = strip.Color(random(0,255), random(0,255), random(0,255));
+  return rnd_color;
+}
+
+
 void timer_before_closing(){
   fade_up(100, 20, 238, 238, 0); //yellow
-  colorWipe(orange, timer_before_closing_duration); // orange
-  colorWipe(all_off, 100); // Off
+  color_wipe(orange, timer_before_closing_duration); // orange
+  //color_wipe(all_off, 100); // Off
 }//timer_before_closing
 
 
@@ -118,10 +168,10 @@ void fade_up(int num_steps, int wait, int R, int G, int B) {
 
 
 // Fill the dots one after the other with a color
-void colorWipe(uint32_t c, int wait) {
+void color_wipe(uint32_t c, int wait) {
   for(uint16_t i=0; i<strip.numPixels(); i++) {
       strip.setPixelColor(i, c);
       strip.show();
       delay(wait);
   }
-} //colorWipe
+} //color_wipe
