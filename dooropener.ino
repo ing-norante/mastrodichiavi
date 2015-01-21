@@ -39,6 +39,9 @@ Bounce lockswitchdebouncer = Bounce();
 Bounce nfcdebouncer = Bounce();
 
 
+bool oldState = HIGH;
+
+
 
 void setup() {
 
@@ -48,11 +51,8 @@ void setup() {
   lockswitchdebouncer.attach(lockswitch);
   lockswitchdebouncer.interval(50);
 
-  //Set up the switch from the came rbm21 and his debouncer
-  pinMode(nfcswitch,INPUT);
-  digitalWrite(nfcswitch,HIGH);
-  nfcdebouncer.attach(nfcswitch);
-  nfcdebouncer.interval(50);
+  //Set up the switch from the came rbm21
+  pinMode(nfcswitch, INPUT_PULLUP);
 
 
   //Initialize the led ring
@@ -90,17 +90,22 @@ void setup() {
 }
 
 void loop() {
+  // Get current button state.
+  bool newState = digitalRead(nfcswitch);
 
-  // Update the nfcdebouncer
-  nfcdebouncer.update();
-
-  // Open or close the lock with the stepper motor
-  if ( nfcdebouncer.read() == LOW) {
-    close_lock();
+  // Check if state changed from high to low (button press).
+  if (newState == LOW && oldState == HIGH) {
+    // Short delay to debounce button.
+    delay(20);
+    // Check if button is still low after debounce.
+    newState = digitalRead(nfcswitch);
+    if (newState == LOW) {
+      close_lock();
+    }
   }
-  else {
 
-  }
+  // Set the last button state to the old state.
+  oldState = newState;
 }
 
 
@@ -124,16 +129,6 @@ void close_lock(){
 
   fade_up(100, 20, 40, 0, 0); //hi red
 
-  /*for (j=0; j<2; j++) {
-    for(i=0; i<strip.numPixels()+3; i++) {
-      if (i<strip.numPixels()) strip.setPixelColor(i, hi_red);
-      if ((i-1 >= 0) && (i-1 < strip.numPixels())) strip.setPixelColor(i-1, med_red);
-      if ((i-2 >= 0) && (i-2 < strip.numPixels())) strip.setPixelColor(i-2, low_red);
-      if ((i-3 >= 0) && (i-3 < strip.numPixels())) strip.setPixelColor(i-3, med_green);
-      strip.show();
-      delay(50);
-    }
-  }*/
 }//close_lock
 
 
