@@ -20,7 +20,7 @@
 #define orange strip.Color(139, 69, 0)
 
 
-int timer_before_closing_duration = 100; // 2 seconds * 24 pixels = 48 secs before closing
+int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs before closing
 
 //Defining the motor shield pins
 const int pwmA = 3;
@@ -186,7 +186,7 @@ uint32_t random_color(){
 void timer_before_closing(){
 
   randomSeed(analogRead(0));
-  uint32_t trick = random(1,5);
+  uint32_t trick = random(1,6);
   Serial.println(trick);
 
   switch(trick){
@@ -206,10 +206,14 @@ void timer_before_closing(){
       rainbowCycle(50); //A 50ms delay corresponds to ~40 sec loop
     break;
 
+    case 5:
+      fade_up(100, 20, 238, 238, 0); //yellow
+      color_wipe(orange, timer_before_closing_duration); // orange
+    break;
+
   }
 
-  /*fade_up(100, 20, 238, 238, 0); //yellow
-  color_wipe(orange, timer_before_closing_duration); // orange*/
+
 
 }//timer_before_closing
 
