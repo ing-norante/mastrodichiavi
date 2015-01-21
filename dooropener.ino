@@ -167,9 +167,9 @@ void turn_key(String direction){
   }
 
   if(direction == "close"){
-    fade_up(200, 10, 40, 0, 0); //hi red
+      fade_up(200, 10, 40, 0, 0); //hi red
     }else{
-      stepperMotor.step(-1);
+      fade_up(200, 10, 0, 40, 0); //hi green
   }
 
 }//turn_key
