@@ -3,18 +3,22 @@
 #include <Stepper.h>
 
 
-
+//Arduino PIN definition
 #define neopixel_pin 6  // the digital pin the neopixel ring is connected to
-#define orange strip.Color(139, 69, 0)
-#define all_off strip.Color(0, 0, 0)
-#define low_red strip.Color(3, 0, 0)
-#define low_green strip.Color(0, 3, 0)
-#define med_red strip.Color(20, 0, 0)
-#define med_green strip.Color(0, 20, 0)
-#define hi_red strip.Color(40, 0, 0)
-#define hi_green strip.Color(0, 40,0)
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
 #define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
+
+
+//Defining some colors
+#define all_off strip.Color(0, 0, 0)
+#define low_red strip.Color(3, 0, 0)
+#define med_red strip.Color(20, 0, 0)
+#define hi_red strip.Color(40, 0, 0)
+#define low_green strip.Color(0, 3, 0)
+#define med_green strip.Color(0, 20, 0)
+#define hi_green strip.Color(0, 40,0)
+#define orange strip.Color(139, 69, 0)
+
 
 int timer_before_closing_duration = 100; // 2 seconds * 24 pixels = 48 secs before closing
 
@@ -33,15 +37,14 @@ const int TURN_FIXTURE = 108;
 // Initialize the Stepper
 Stepper stepperMotor(STEPS, dirA, dirB);
 
+//Initialize the NeoPixel Led Ring
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
 // Instantiate some bounce objects
 Bounce lockswitchdebouncer = Bounce();
-Bounce nfcdebouncer = Bounce();
 
 
 bool oldState = HIGH;
-
 
 
 void setup() {
@@ -82,7 +85,7 @@ void setup() {
     }else{
       // The lock is NOT armed
 
-      //timer_before_closing();
+      timer_before_closing();
       //stepperMotor.step(STEPS);
       turn_key("close");
   }
