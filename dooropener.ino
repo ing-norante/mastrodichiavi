@@ -49,6 +49,13 @@ bool oldState = HIGH;
 
 void setup() {
 
+  // Open serial communications
+  Serial.begin(9600);
+
+  // send an intro:
+  Serial.println("\n\nArduino Door Opener for [OfficineNora]");
+  Serial.println();
+
   //Set up the lock switch and his debouncer
   pinMode(lockswitch, INPUT);
   digitalWrite(lockswitch, HIGH);
@@ -179,7 +186,8 @@ uint32_t random_color(){
 void timer_before_closing(){
 
   randomSeed(analogRead(0));
-  int trick = random(1,4);
+  uint32_t trick = random(1,5);
+  Serial.println(trick);
 
   switch(trick){
     case 1:
