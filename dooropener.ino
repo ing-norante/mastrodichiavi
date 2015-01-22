@@ -4,10 +4,10 @@
 
 
 //Arduino PIN definition
-#define neopixel_pin 6  // the digital pin the neopixel ring is connected to
 #define lockswitch 4 // the digital pin with the microswitch connected to the lock
 #define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
-
+#define neopixel_pin 6  // the digital pin the neopixel ring is connected to
+#define closingswitch 7 // the digital pin with the closing switch attached to
 
 //Defining some colors
 #define all_off strip.Color(0, 0, 0)
@@ -24,9 +24,9 @@ int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs bef
 
 //Defining the motor shield pins
 const int pwmA = 3;
-const int pwmB = 11;
-const int brakeA = 9;
 const int brakeB = 8;
+const int brakeA = 9;
+const int pwmB = 11;
 const int dirA = 12;
 const int dirB = 13;
 
@@ -45,7 +45,7 @@ Bounce lockswitchdebouncer = Bounce();
 
 
 bool oldState = HIGH;
-
+bool lockState = HIGH; //LOW is closed, HIGH is open
 
 void setup() {
 
@@ -53,7 +53,7 @@ void setup() {
   Serial.begin(9600);
 
   // send an intro:
-  Serial.println("\n\nArduino Door Opener for [OfficineNora]");
+  Serial.println("\n\nArduino Door Opener for [OfficineNora]\n");
   Serial.println();
 
   //Set up the lock switch and his debouncer
@@ -64,6 +64,9 @@ void setup() {
 
   //Set up the switch from the came rbm21
   pinMode(nfcswitch, INPUT_PULLUP);
+
+  //Set up the closing switch
+  pinMode(closingswitch, INPUT_PULLUP);
 
 
   //Initialize the led ring
@@ -85,24 +88,19 @@ void setup() {
   // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
   stepperMotor.setSpeed(65);
 
-  lockswitchdebouncer.update();
-
-  if (lockswitchdebouncer.read() == LOW){
-    // The lock is armed
-    }else{
-      // The lock is NOT armed
-      timer_before_closing();
-      turn_key("close");
-  }
+  //Booting routine
+  theaterChase(strip.Color(  0,   0, 127), 50, 50); // Blue
+  color_wipe(strip.Color(0, 0, 0), 50);    // Black/off
 
   randomSeed(analogRead(0));
 }
 
 void loop() {
-  // Get current button state.
+
+  // Get current state from the Came RBM21 pin.
   bool newState = digitalRead(nfcswitch);
 
-  // Check if state changed from high to low (button press).
+  // Check if state changed from high to low (got a signal from the Came ).
   if (newState == LOW && oldState == HIGH) {
     // Short delay to debounce button.
     delay(20);
@@ -110,21 +108,55 @@ void loop() {
     newState = digitalRead(nfcswitch);
     if (newState == LOW) {
       lockswitchdebouncer.update();
-
       if (lockswitchdebouncer.read() == LOW){
         // The lock is armed
         turn_key("open");
+        Serial.println("\n\nOPEN door\n");
+        Serial.println();
+        lockState = HIGH;
         }else{
           // The lock is NOT armed
+          Serial.println("\n\nThe door is already OPEN\n");
+          Serial.println();
+
         }
 
 
     }
   }
-
   // Set the last button state to the old state.
   oldState = newState;
+
+  // Get current state from the closing switch
+  bool newStateForClosing = digitalRead(closingswitch);
+
+  // Check if state changed from high to low (button pressed ).
+  if (newStateForClosing == LOW && lockState == HIGH ){
+    // Short delay to debounce button.
+    delay(20);
+    // Check if button is still low after debounce.
+    newStateForClosing = digitalRead(closingswitch);
+    if (newStateForClosing == LOW){
+      lockswitchdebouncer.update();
+      if (lockswitchdebouncer.read() == LOW){
+        // The lock is armed
+        Serial.println("\n\nThe door is already CLOSED\n");
+        Serial.println();
+        }else{
+          // The lock is NOT armed
+          timer_before_closing();
+          turn_key("close");
+          Serial.println("\n\nCLOSE door\n");
+          Serial.println();
+          lockState = LOW;
+        }
+    }
+  }
+  lockState = newStateForClosing;
+
+
 }
+
 
 
 void turn_key(String direction){
@@ -194,7 +226,6 @@ void timer_before_closing(){
 
   randomSeed(analogRead(0));
   uint32_t trick = random(1,6);
-  Serial.println(trick);
 
   switch(trick){
     case 1:
@@ -202,7 +233,7 @@ void timer_before_closing(){
     break;
 
     case 2:
-      theaterChase(random_color(),50); //A 50ms delay corresponds to ~40 sec loop
+      theaterChase(random_color(),50,250); //A 50ms delay corresponds to ~40 sec loop
     break;
 
     case 3:
@@ -275,8 +306,8 @@ void rainbowCycle(uint8_t wait) {
 }
 
 //Theatre-style crawling lights.
-void theaterChase(uint32_t c, uint8_t wait) {
-  for (int j=0; j<250; j++) {  //do 250 cycles of chasing
+void theaterChase(uint32_t c, uint8_t wait, int numcycles) {
+  for (int j=0; j < numcycles; j++) {  //do numcycles cycles of chasing
     for (int q=0; q < 3; q++) {
       for (int i=0; i < strip.numPixels(); i=i+3) {
         strip.setPixelColor(i+q, c);    //turn every third pixel on
