@@ -91,9 +91,7 @@ void setup() {
     // The lock is armed
     }else{
       // The lock is NOT armed
-
       timer_before_closing();
-      //stepperMotor.step(STEPS);
       turn_key("close");
   }
 
@@ -111,7 +109,16 @@ void loop() {
     // Check if button is still low after debounce.
     newState = digitalRead(nfcswitch);
     if (newState == LOW) {
-      turn_key("open");
+      lockswitchdebouncer.update();
+
+      if (lockswitchdebouncer.read() == LOW){
+        // The lock is armed
+        turn_key("open");
+        }else{
+          // The lock is NOT armed
+        }
+
+
     }
   }
 
