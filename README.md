@@ -9,7 +9,7 @@ This system is designed to open *automatically* the door at Officine Nora Jewler
 When I say *automatically* I mean using the stepper motor to phisically turn the key inside the keylock. The access control is ruled by
 the Came RBM21 with an RFID reader sensor placed near the entrance. For testing purpose I used a switch to emulate the signal coming from the RBM21
 but due to voltage difference we can't connect the Came directly to the Arduino. We'll need a relay to separate the two circuits.
-Have a look [here](http://www.glacialwanderer.com/hobbyrobotics/?p=9) and [here](http://www.instructables.com/id/Connecting-a-12V-Relay-to-Arduino/?ALLSTEPS) for reference. 
+Have a look [here](http://www.glacialwanderer.com/hobbyrobotics/?p=9) and [here](http://www.instructables.com/id/Connecting-a-12V-Relay-to-Arduino/?ALLSTEPS) for reference.
 
 ###Basic functioning###
 The Arduino has a power switch and a switch sensor placed inside the keylock to detect if the lock is armed or not. The power switch is used
@@ -28,9 +28,8 @@ led ring that's why timer_before_closing() has some random scenario to amuse you
 
 
 ###Libraries Used###
-I tried to use only *official* libraries when available:
+I tried to use *official* libraries when available:
 
-* [Bounce](http://playground.arduino.cc/Code/Bounce) - Arduino library that debounces digital inputs
 * [Adafruit NeoPixel library](https://github.com/adafruit/Adafruit_NeoPixel) - Arduino library for controlling single-wire-based LED pixels and strip
 * [SMLib](http://playground.arduino.cc/Code/SMlib) - A simple library for finite state machines
 * [Stepper](http://arduino.cc/en/reference/stepper) - A stepper library to control control unipolar or bipolar stepper motors
