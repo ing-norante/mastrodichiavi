@@ -1,5 +1,4 @@
 #include <Adafruit_NeoPixel.h>
-#include <Bounce2.h>
 #include <Stepper.h>
 
 
@@ -40,34 +39,100 @@ Stepper stepperMotor(STEPS, dirA, dirB);
 //Initialize the NeoPixel Led Ring
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
-// Instantiate some bounce objects
-Bounce lockswitchdebouncer = Bounce();
+
+#define DEFAULT_LONGPRESS_LEN    25  // Min nr of loops for a long press
+#define DELAY                    20  // Delay per loop in ms
 
 
-bool oldState = HIGH;
-bool lockState = HIGH; //LOW is closed, HIGH is open
+
+enum { EV_NONE=0, EV_SHORTPRESS, EV_LONGPRESS };
+
+
+// Class definition
+
+class ButtonHandler {
+  public:
+  // Constructor
+  ButtonHandler(int pin, int longpress_len=DEFAULT_LONGPRESS_LEN);
+
+  // Initialization done after construction, to permit static instances
+  void init();
+
+  // Handler, to be called in the loop()
+  int handle();
+
+  // Handy state checker
+  int is_pressed();
+
+  protected:
+  boolean was_pressed;     // previous state
+  int pressed_counter;     // press running duration
+  const int pin;           // pin to which button is connected
+  const int longpress_len; // longpress duration
+};
+
+ButtonHandler::ButtonHandler(int p, int lp)
+: pin(p), longpress_len(lp)
+{
+}
+
+void ButtonHandler::init()
+{
+  pinMode(pin, INPUT);
+  digitalWrite(pin, HIGH); // pull-up
+  was_pressed = false;
+  pressed_counter = 0;
+}
+
+int ButtonHandler::handle()
+{
+  int event;
+  int now_pressed = !digitalRead(pin);
+
+  if (!now_pressed && was_pressed) {
+    // handle release event
+    if (pressed_counter < longpress_len)
+    event = EV_SHORTPRESS;
+    else
+    event = EV_LONGPRESS;
+  }
+  else
+  event = EV_NONE;
+
+  // update press running duration
+  if (now_pressed)
+  ++pressed_counter;
+  else
+  pressed_counter = 0;
+
+  // remember state, and we're done
+  was_pressed = now_pressed;
+  return event;
+}
+
+int ButtonHandler::is_pressed(){
+  return was_pressed;
+}
+
+
+// Instantiate button objects
+ButtonHandler lockbutton(lockswitch);
+ButtonHandler closebutton(closingswitch);
+ButtonHandler openbutton(nfcswitch);
+
 
 void setup() {
 
   // Open serial communications
   Serial.begin(9600);
 
+  // init buttons pins
+  lockbutton.init();
+  closebutton.init();
+
   // send an intro:
   Serial.println("\n\nArduino Door Opener for [OfficineNora]\n");
   Serial.println();
-
-  //Set up the lock switch and his debouncer
-  pinMode(lockswitch, INPUT);
-  digitalWrite(lockswitch, HIGH);
-  lockswitchdebouncer.attach(lockswitch);
-  lockswitchdebouncer.interval(50);
-
-  //Set up the switch from the came rbm21
-  pinMode(nfcswitch, INPUT_PULLUP);
-
-  //Set up the closing switch
-  pinMode(closingswitch, INPUT_PULLUP);
-
 
   //Initialize the led ring
   strip.begin();
@@ -100,67 +165,50 @@ void setup() {
 
 void loop() {
 
-  // Get current state from the Came RBM21 pin.
-  bool newState = digitalRead(nfcswitch);
+  // handle close switch
+  int closeevent = closebutton.handle();
 
-  // Check if state changed from high to low (got a signal from the Came ).
-  if (newState == LOW && oldState == HIGH) {
-    // Short delay to debounce button.
-    delay(20);
-    // Check if button is still low after debounce.
-    newState = digitalRead(nfcswitch);
-    if (newState == LOW) {
-      lockswitchdebouncer.update();
-      if (lockswitchdebouncer.read() == LOW){
-        // The lock is armed
-        turn_key("open");
-        Serial.println("\n\nOPEN door\n");
-        Serial.println();
-        lockState = HIGH;
-        }else{
-          // The lock is NOT armed
-          Serial.println("\n\nThe door is already OPEN\n");
-          Serial.println();
+  // handle lock switch
+  int lockevent = lockbutton.handle();
 
-        }
+  //If you press long on the close button
+  if (closeevent == EV_LONGPRESS){
 
-
+    // we check if the lock is already closed
+    if(lockbutton.is_pressed() == 1){
+      Serial.println("Lockswitch is down, so the door is already closed");
+    }else{
+      Serial.println("Lockswitch is up, so we must close the door");
+      timer_before_closing();
+      turn_key("close");
+      Serial.println("Door closed");
     }
-  }
-  // Set the last button state to the old state.
-  oldState = newState;
 
-  // Get current state from the closing switch
-  bool newStateForClosing = digitalRead(closingswitch);
-
-  // Check if state changed from high to low (button pressed ).
-  if (newStateForClosing == LOW && lockState == HIGH ){
-    // Short delay to debounce button.
-    delay(20);
-    // Check if button is still low after debounce.
-    newStateForClosing = digitalRead(closingswitch);
-    if (newStateForClosing == LOW){
-      lockswitchdebouncer.update();
-      if (lockswitchdebouncer.read() == LOW){
-        // The lock is armed
-        Serial.println("\n\nThe door is already CLOSED\n");
-        Serial.println();
-        }else{
-          // The lock is NOT armed
-          timer_before_closing();
-          turn_key("close");
-          Serial.println("\n\nCLOSE door\n");
-          Serial.println();
-          lockState = LOW;
-        }
-    }
-  }else {
   }
 
+  // handle open signal
+  int openevent = openbutton.handle();
+
+  //If we get a signal from the CAME
+  if( openevent == EV_SHORTPRESS){
+    // we check if the lock is already closed
+    if(lockbutton.is_pressed() == 1){
+      Serial.println("Lockswitch is down, the door is closed and we're gonna open it");
+      turn_key("open");
+      Serial.println("Door opened");
+      }else{
+        Serial.println("Lockswitch is up, so the door is already open");
+      }
+  }
+
+  // add newline sometimes
+  static int counter = 0;
+  if ((++counter & 0x1f) == 0)
+  Serial.println();
+
+  delay(DELAY);
 
 }
-
-
 
 void turn_key(String direction){
 
