@@ -7,7 +7,9 @@ This system is designed to open *automatically* the door at Officine Nora Jewler
 * [NeoPixel Ring - 24 x WS2812 5050 RGB LED with Integrated Drivers](http://www.adafruit.com/product/1586)
 
 When I say *automatically* I mean using the stepper motor to phisically turn the key inside the keylock. The access control is ruled by
-the Came RBM21 with an RFID reader sensor placed near the entrance.
+the Came RBM21 with an RFID reader sensor placed near the entrance. For testing purpose I used a switch to emulate the signal coming from the RBM21
+but due to voltage difference we can't connect the Came directly to the Arduino. We'll need a relay to separate the two circuits.
+Have a look [here](http://www.glacialwanderer.com/hobbyrobotics/?p=9) and [here](http://www.instructables.com/id/Connecting-a-12V-Relay-to-Arduino/?ALLSTEPS) for reference. 
 
 ###Basic functioning###
 The Arduino has a power switch and a switch sensor placed inside the keylock to detect if the lock is armed or not. The power switch is used

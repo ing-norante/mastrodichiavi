@@ -92,8 +92,11 @@ void setup() {
   theaterChase(strip.Color(  0,   0, 127), 50, 50); // Blue
   color_wipe(strip.Color(0, 0, 0), 50);    // Black/off
 
+  //Randomize seed
   randomSeed(analogRead(0));
 }
+
+
 
 void loop() {
 
@@ -151,8 +154,8 @@ void loop() {
           lockState = LOW;
         }
     }
+  }else {
   }
-  lockState = newStateForClosing;
 
 
 }
