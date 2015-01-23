@@ -165,11 +165,11 @@ void setup() {
 
 void loop() {
 
-  // handle close switch
-  int closeevent = closebutton.handle();
-
   // handle lock switch
   int lockevent = lockbutton.handle();
+
+  // handle close switch
+  int closeevent = closebutton.handle();
 
   //If you press long on the close button
   if (closeevent == EV_LONGPRESS){
@@ -198,6 +198,8 @@ void loop() {
       Serial.println("Door opened");
       }else{
         Serial.println("Lockswitch is up, so the door is already open");
+        theaterChase(random_color(),50,25);
+        fade_up(200, 10, 0, 40, 0); //hi green
       }
   }
 
@@ -284,7 +286,7 @@ void timer_before_closing(){
     break;
 
     case 2:
-      theaterChase(random_color(),50,250); //A 50ms delay corresponds to ~40 sec loop
+      theaterChase(random_color(),50,250); //A 50ms delay with 250 cycles corresponds to ~40 sec loop
     break;
 
     case 3:
