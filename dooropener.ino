@@ -1,5 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <Stepper.h>
+#include <Button.h>
+
 
 
 //Arduino PIN definition
@@ -116,7 +118,8 @@ int ButtonHandler::is_pressed(){
 
 
 // Instantiate button objects
-ButtonHandler lockbutton(lockswitch);
+Button lockbutton = Button(lockswitch,PULLUP);
+
 ButtonHandler closebutton(closingswitch);
 ButtonHandler openbutton(nfcswitch);
 
@@ -127,7 +130,6 @@ void setup() {
   Serial.begin(9600);
 
   // init buttons pins
-  lockbutton.init();
   closebutton.init();
 
   // send an intro:
@@ -165,9 +167,6 @@ void setup() {
 
 void loop() {
 
-  // handle lock switch
-  int lockevent = lockbutton.handle();
-
   // handle close switch
   int closeevent = closebutton.handle();
 
@@ -175,7 +174,7 @@ void loop() {
   if (closeevent == EV_LONGPRESS){
 
     // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
+    if(lockbutton.isPressed() ){
       Serial.println("Lockswitch is down, so the door is already closed");
     }else{
       Serial.println("Lockswitch is up, so we must close the door");
@@ -192,7 +191,7 @@ void loop() {
   //If we get a signal from the CAME
   if( openevent == EV_SHORTPRESS){
     // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
+    if(lockbutton.isPressed()){
       Serial.println("Lockswitch is down, the door is closed and we're gonna open it");
       turn_key("open");
       Serial.println("Door opened");
@@ -207,6 +206,15 @@ void loop() {
   static int counter = 0;
   if ((++counter & 0x1f) == 0)
   Serial.println();
+
+
+  /*//Some visual feedback on the state of the lock
+  if(lockbutton.is_pressed() == 1){
+    fade_up(200, 10, 40, 0, 0); //hi red
+  }
+  if(lockbutton.is_pressed() == 0){
+    fade_up(200, 10, 0, 40, 0); //hi green
+  }*/
 
   delay(DELAY);
 

@@ -33,3 +33,4 @@ I tried to use *official* libraries when available:
 * [Adafruit NeoPixel library](https://github.com/adafruit/Adafruit_NeoPixel) - Arduino library for controlling single-wire-based LED pixels and strip
 * [SMLib](http://playground.arduino.cc/Code/SMlib) - A simple library for finite state machines
 * [Stepper](http://arduino.cc/en/reference/stepper) - A stepper library to control control unipolar or bipolar stepper motors
+* [Button](http://playground.arduino.cc/Code/Button) - Button is a library for the Arduino. It is created to help Hardware Abstraction, and readability of code. It hides the pinMode, and digitalRead calls for the user.
