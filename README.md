@@ -1,4 +1,4 @@
-#Arduino Door Opener for [OfficineNora](http://www.officinenora.it)#
+#Mastro di chiavi - an Arduino Door Opener for [OfficineNora](http://www.officinenora.it)#
 This system is designed to open *automatically* the door at Officine Nora Jewlerly workshop in Florence using this hardware:
 * [Arduino Uno r3](http://arduino.cc/en/Main/ArduinoBoardUno)  
 * [Kysan 1124090 Nema 17 Stepper Motor](http://store.arduino.cc/product/MK00742)

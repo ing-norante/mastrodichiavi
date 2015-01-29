@@ -161,6 +161,13 @@ void setup() {
 
   //Randomize seed
   randomSeed(analogRead(0));
+
+  //Some visual feedback on the state of the lock
+  if(lockbutton.isPressed() ){
+    fade_up(200, 10, 40, 0, 0); //hi red
+  }else{
+    fade_up(200, 10, 0, 40, 0); //hi green
+  }
 }
 
 
@@ -206,15 +213,6 @@ void loop() {
   static int counter = 0;
   if ((++counter & 0x1f) == 0)
   Serial.println();
-
-
-  /*//Some visual feedback on the state of the lock
-  if(lockbutton.is_pressed() == 1){
-    fade_up(200, 10, 40, 0, 0); //hi red
-  }
-  if(lockbutton.is_pressed() == 0){
-    fade_up(200, 10, 0, 40, 0); //hi green
-  }*/
 
   delay(DELAY);
 
