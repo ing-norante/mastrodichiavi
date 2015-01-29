@@ -1,6 +1,5 @@
 #include <Adafruit_NeoPixel.h>
 #include <Stepper.h>
-#include <Button.h>
 
 
 
@@ -118,8 +117,7 @@ int ButtonHandler::is_pressed(){
 
 
 // Instantiate button objects
-Button lockbutton = Button(lockswitch,PULLUP);
-
+ButtonHandler lockbutton(lockswitch);
 ButtonHandler closebutton(closingswitch);
 ButtonHandler openbutton(nfcswitch);
 
@@ -163,7 +161,7 @@ void setup() {
   randomSeed(analogRead(0));
 
   //Some visual feedback on the state of the lock
-  if(lockbutton.isPressed() ){
+  if(lockbutton.is_pressed() == 1 ){
     fade_up(200, 10, 40, 0, 0); //hi red
   }else{
     fade_up(200, 10, 0, 40, 0); //hi green
@@ -174,6 +172,9 @@ void setup() {
 
 void loop() {
 
+  // handle lock switch
+  int lockevent = lockbutton.handle();
+
   // handle close switch
   int closeevent = closebutton.handle();
 
@@ -181,8 +182,10 @@ void loop() {
   if (closeevent == EV_LONGPRESS){
 
     // we check if the lock is already closed
-    if(lockbutton.isPressed() ){
+    if(lockbutton.is_pressed() == 1){
       Serial.println("Lockswitch is down, so the door is already closed");
+      theaterChase(random_color(),50,25);
+      fade_up(200, 10, 40, 0, 0); //hi red
     }else{
       Serial.println("Lockswitch is up, so we must close the door");
       timer_before_closing();
@@ -198,7 +201,7 @@ void loop() {
   //If we get a signal from the CAME
   if( openevent == EV_SHORTPRESS){
     // we check if the lock is already closed
-    if(lockbutton.isPressed()){
+    if(lockbutton.is_pressed() == 1){
       Serial.println("Lockswitch is down, the door is closed and we're gonna open it");
       turn_key("open");
       Serial.println("Door opened");
