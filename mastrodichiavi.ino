@@ -41,7 +41,7 @@ Stepper stepperMotor(STEPS, dirA, dirB);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
 
-#define DEFAULT_LONGPRESS_LEN    25  // Min nr of loops for a long press
+#define DEFAULT_LONGPRESS_LEN    30  // Min nr of loops for a long press
 #define DELAY                    20  // Delay per loop in ms
 
 
@@ -128,10 +128,11 @@ void setup() {
   Serial.begin(9600);
 
   // init buttons pins
+  lockbutton.init();
   closebutton.init();
 
   // send an intro:
-  Serial.println("\n\nArduino Door Opener for [OfficineNora]\n");
+  Serial.println("\n\n Mastro di chiavi [Booting...]\n");
   Serial.println();
 
   //Initialize the led ring
@@ -166,6 +167,10 @@ void setup() {
   }else{
     fade_up(200, 10, 0, 40, 0); //hi green
   }
+
+  // send an intro:
+  Serial.println("\n\n Mastro di chiavi [Ready]\n");
+  Serial.println();
 }
 
 
