@@ -139,17 +139,12 @@ void setup() {
   strip.begin();
   strip.show();
 
-  // Turn on pulse width modulation
+  // Initialize the stepper motor
   pinMode(pwmA, OUTPUT);
-  digitalWrite(pwmA, HIGH);
   pinMode(pwmB, OUTPUT);
-  digitalWrite(pwmB, HIGH);
-
-  // Unleash the breaks
   pinMode(brakeA, OUTPUT);
-  digitalWrite(brakeA, LOW);
   pinMode(brakeB, OUTPUT);
-  digitalWrite(brakeB, LOW);
+
 
   // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
   stepperMotor.setSpeed(65);
@@ -252,11 +247,22 @@ void turn_key(String direction){
         break;
 
       }
+
+      digitalWrite(pwmA, HIGH);
+      digitalWrite(pwmB, HIGH);
+      digitalWrite(brakeA, LOW);
+      digitalWrite(brakeB, LOW);
+
       if(direction == "close"){
           stepperMotor.step(-(STEPS / strip.numPixels()));
         }else{
           stepperMotor.step(STEPS / strip.numPixels());
       }
+      
+      digitalWrite(pwmA, LOW);
+      digitalWrite(pwmB, LOW);
+      digitalWrite(brakeA, HIGH);
+      digitalWrite(brakeB, HIGH);
 
       strip.show();
     }
