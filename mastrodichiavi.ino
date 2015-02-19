@@ -22,6 +22,18 @@
 
 int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs before closing
 
+int door_open = 0; // pseudo digital
+int auto_lock_switch_time = 2; // in seconds
+
+unsigned long time_door = millis();
+unsigned long time_switch = millis();
+
+long debounce = 500;
+boolean locked = false;
+boolean auto_lock = false;
+boolean prev_status = false;
+
+
 //Defining the motor shield pins
 const int pwmA = 3;
 const int brakeB = 8;
@@ -41,85 +53,8 @@ Stepper stepperMotor(STEPS, dirA, dirB);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
 
-#define DEFAULT_LONGPRESS_LEN    30  // Min nr of loops for a long press
-#define DELAY                    20  // Delay per loop in ms
 
 
-
-enum { EV_NONE=0, EV_SHORTPRESS, EV_LONGPRESS };
-
-
-// Class definition
-
-class ButtonHandler {
-  public:
-  // Constructor
-  ButtonHandler(int pin, int longpress_len=DEFAULT_LONGPRESS_LEN);
-
-  // Initialization done after construction, to permit static instances
-  void init();
-
-  // Handler, to be called in the loop()
-  int handle();
-
-  // Handy state checker
-  int is_pressed();
-
-  protected:
-  boolean was_pressed;     // previous state
-  int pressed_counter;     // press running duration
-  const int pin;           // pin to which button is connected
-  const int longpress_len; // longpress duration
-};
-
-ButtonHandler::ButtonHandler(int p, int lp)
-: pin(p), longpress_len(lp)
-{
-}
-
-void ButtonHandler::init()
-{
-  pinMode(pin, INPUT);
-  digitalWrite(pin, HIGH); // pull-up
-  was_pressed = false;
-  pressed_counter = 0;
-}
-
-int ButtonHandler::handle()
-{
-  int event;
-  int now_pressed = !digitalRead(pin);
-
-  if (!now_pressed && was_pressed) {
-    // handle release event
-    if (pressed_counter < longpress_len)
-    event = EV_SHORTPRESS;
-    else
-    event = EV_LONGPRESS;
-  }
-  else
-  event = EV_NONE;
-
-  // update press running duration
-  if (now_pressed)
-  ++pressed_counter;
-  else
-  pressed_counter = 0;
-
-  // remember state, and we're done
-  was_pressed = now_pressed;
-  return event;
-}
-
-int ButtonHandler::is_pressed(){
-  return was_pressed;
-}
-
-
-// Instantiate button objects
-ButtonHandler lockbutton(lockswitch);
-ButtonHandler closebutton(closingswitch);
-ButtonHandler openbutton(nfcswitch);
 
 
 void setup() {
@@ -127,9 +62,6 @@ void setup() {
   // Open serial communications
   Serial.begin(9600);
 
-  // init buttons pins
-  lockbutton.init();
-  closebutton.init();
 
   // send an intro:
   Serial.println("\n\n Mastro di chiavi [Booting...]\n");
@@ -145,6 +77,10 @@ void setup() {
   pinMode(brakeA, OUTPUT);
   pinMode(brakeB, OUTPUT);
 
+  pinMode(lockswitch, INPUT);
+  pinMode(closingswitch, INPUT);
+  pinMode(nfcswitch, INPUT);
+
 
   // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
   stepperMotor.setSpeed(65);
@@ -156,12 +92,6 @@ void setup() {
   //Randomize seed
   randomSeed(analogRead(0));
 
-  //Some visual feedback on the state of the lock
-  if(lockbutton.is_pressed() == 1 ){
-    fade_up(200, 10, 40, 0, 0); //hi red
-  }else{
-    fade_up(200, 10, 0, 40, 0); //hi green
-  }
 
   // send an intro:
   Serial.println("\n\n Mastro di chiavi [Ready]\n");
@@ -172,54 +102,111 @@ void setup() {
 
 void loop() {
 
-  // handle lock switch
-  int lockevent = lockbutton.handle();
-
-  // handle close switch
-  int closeevent = closebutton.handle();
-
-  //If you press long on the close button
-  if (closeevent == EV_LONGPRESS){
-
-    // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
-      Serial.println("Lockswitch is down, so the door is already closed");
-      theaterChase(random_color(),50,25);
-      fade_up(200, 10, 40, 0, 0); //hi red
-    }else{
-      Serial.println("Lockswitch is up, so we must close the door");
-      timer_before_closing();
-      turn_key("close");
-      Serial.println("Door closed");
-    }
-
-  }
-
-  // handle open signal
-  int openevent = openbutton.handle();
-
-  //If we get a signal from the CAME
-  if( openevent == EV_SHORTPRESS){
-    // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
-      Serial.println("Lockswitch is down, the door is closed and we're gonna open it");
-      turn_key("open");
-      Serial.println("Door opened");
-      }else{
-        Serial.println("Lockswitch is up, so the door is already open");
-        theaterChase(random_color(),50,25);
-        fade_up(200, 10, 0, 40, 0); //hi green
-      }
-  }
-
-  // add newline sometimes
-  static int counter = 0;
-  if ((++counter & 0x1f) == 0)
-  Serial.println();
-
-  delay(DELAY);
+  openSwitch();
+  doorSensor();
+  closeSwitch();
 
 }
+
+
+/*Controlla lo status della porta (aperto\chiuso)*/
+void doorSensor(){
+  Serial.println("\n doorSensor() \n");
+  // pseudo digital
+  door_open = analogRead(lockswitch);
+  Serial.println("door_open:");
+  Serial.print(door_open, DEC);
+  Serial.println("\ntime_door:");
+  Serial.print(time_door, DEC);
+  Serial.println("\ndebounce:");
+  Serial.print(debounce, DEC);
+
+  //Serial.println("millis() =" + millis());
+
+  if(millis() - time_door > debounce){
+    if (door_open <= 500 && prev_status == false){
+      Serial.println("Door: opened");
+      prev_status = true;
+      locked = false;
+      fade_up(200, 10, 0, 40, 0); //hi green
+    }else  if(door_open > 500 && prev_status == true){
+      Serial.println("Door: closed");
+      prev_status = false;
+      fade_up(200, 10, 40, 0, 0); //hi red
+    }
+    time_door = millis();
+  }
+}
+
+
+void closeSwitch(){
+  Serial.println("closeSwitch");
+
+  int dstimer = 0;
+  int door_switch = analogRead(closingswitch); // pseudo digital
+  if(millis() - time_switch > debounce && door_switch >= 300){
+    while (analogRead(closingswitch) >= 300) {
+      delay(100);
+      dstimer++;
+    }
+    Serial.println(door_switch,DEC);
+    Serial.println(dstimer,DEC);
+    if (dstimer < auto_lock_switch_time*10) { //button has been pressed less than 2 seconds = 1000/100
+        if (locked == false){
+          turn_key("close");
+          Serial.println("door locked");
+          locked = true;
+
+        }else if(locked == true){
+          turn_key("open");
+          Serial.println("door unlocked");
+          locked = false;
+      }
+    }else {
+      // auto_unlock off/on
+      if(auto_lock == true){
+        Serial.println("auto_lock off");
+        auto_lock = false;
+      }else{
+        Serial.println("auto_lock on");
+        auto_lock = true;
+      }
+      //analogWrite(ledIN, 0); // resetting output
+
+    }
+    time_switch = millis();
+  }
+}
+
+void openSwitch(){
+  Serial.println("openSwitch");
+
+  int dstimer = 0;
+  int opener_switch = analogRead(nfcswitch); // pseudo digital
+  Serial.println(opener_switch,DEC);
+
+  if(millis() - time_switch > debounce && opener_switch >= 300){
+    while (analogRead(nfcswitch) >= 300) {
+      delay(100);
+      dstimer++;
+    }
+    Serial.println(opener_switch,DEC);
+    Serial.println(dstimer,DEC);
+    if (dstimer < auto_lock_switch_time*10) { //button has been pressed less than 2 seconds = 1000/100
+      if (locked == false){
+        Serial.println("door already open");
+
+        }else if(locked == true){
+          turn_key("open");
+          Serial.println("door unlocked");
+          locked = false;
+        }
+      }
+    }
+    time_switch = millis();
+}
+
+
 
 void turn_key(String direction){
 
@@ -255,10 +242,12 @@ void turn_key(String direction){
 
       if(direction == "close"){
           stepperMotor.step(-(STEPS / strip.numPixels()));
+          locked = true;
         }else{
           stepperMotor.step(STEPS / strip.numPixels());
+          locked = false;
       }
-      
+
       digitalWrite(pwmA, LOW);
       digitalWrite(pwmB, LOW);
       digitalWrite(brakeA, HIGH);
