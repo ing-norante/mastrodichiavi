@@ -81,6 +81,12 @@ void setup() {
  Serial.println("\nMastro di chiavi [Ready]\n");
  Serial.println();
 
+ if(lockclosed() == false){
+   fade_up(200, 10, 0, 40, 0); //hi green
+ }else{
+   fade_up(200, 10, 40, 0, 0); //hi red
+ }
+
 }
 
 
