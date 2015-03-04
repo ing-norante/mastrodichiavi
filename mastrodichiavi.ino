@@ -1,13 +1,8 @@
-#include <Adafruit_NeoPixel.h>
 #include <Stepper.h>
+#include <Adafruit_NeoPixel.h>
 
-
-
-//Arduino PIN definition
-#define lockswitch 4 // the digital pin with the microswitch connected to the lock
-#define nfcswitch 5 // the digital pin where arrives the signal from the Came RBM21
-#define neopixel_pin 6  // the digital pin the neopixel ring is connected to
-#define closingswitch 7 // the digital pin with the closing switch attached to
+#define DEBOUNCE 10  // button debouncer, how many ms to debounce, 5+ ms is usually plenty
+#define neopixel_pin 10  // the digital pin the neopixel ring is connected to
 
 //Defining some colors
 #define all_off strip.Color(0, 0, 0)
@@ -19,8 +14,18 @@
 #define hi_green strip.Color(0, 40,0)
 #define orange strip.Color(139, 69, 0)
 
+int timer_before_closing_duration = 200; // 2 seconds * 24 pixels = 48 secs before closing
 
-int timer_before_closing_duration = 2000; // 2 seconds * 24 pixels = 48 secs before closing
+
+// here is where we define the buttons that we'll use. button "1" is the first, button "6" is the 6th, etc
+byte buttons[] = {4, 5, 7};
+
+// This handy macro lets us determine how big the array up above is, by checking the size
+#define NUMBUTTONS sizeof(buttons)
+
+// we will track if a button is just pressed, just released, or 'currently pressed'
+byte pressed[NUMBUTTONS], justpressed[NUMBUTTONS], justreleased[NUMBUTTONS];
+
 
 //Defining the motor shield pins
 const int pwmA = 3;
@@ -32,200 +37,140 @@ const int dirB = 13;
 
 // Steps 200 is a complete round
 const int STEPS = 208;
-const int TURN_FIXTURE = 108;
 
 // Initialize the Stepper
 Stepper stepperMotor(STEPS, dirA, dirB);
 
-//Initialize the NeoPixel Led Ring
+// Initialize the LedRing
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(24, neopixel_pin, NEO_GRB + NEO_KHZ800);
 
-
-#define DEFAULT_LONGPRESS_LEN    30  // Min nr of loops for a long press
-#define DELAY                    20  // Delay per loop in ms
-
-
-
-enum { EV_NONE=0, EV_SHORTPRESS, EV_LONGPRESS };
-
-
-// Class definition
-
-class ButtonHandler {
-  public:
-  // Constructor
-  ButtonHandler(int pin, int longpress_len=DEFAULT_LONGPRESS_LEN);
-
-  // Initialization done after construction, to permit static instances
-  void init();
-
-  // Handler, to be called in the loop()
-  int handle();
-
-  // Handy state checker
-  int is_pressed();
-
-  protected:
-  boolean was_pressed;     // previous state
-  int pressed_counter;     // press running duration
-  const int pin;           // pin to which button is connected
-  const int longpress_len; // longpress duration
-};
-
-ButtonHandler::ButtonHandler(int p, int lp)
-: pin(p), longpress_len(lp)
-{
-}
-
-void ButtonHandler::init()
-{
-  pinMode(pin, INPUT);
-  digitalWrite(pin, HIGH); // pull-up
-  was_pressed = false;
-  pressed_counter = 0;
-}
-
-int ButtonHandler::handle()
-{
-  int event;
-  int now_pressed = !digitalRead(pin);
-
-  if (!now_pressed && was_pressed) {
-    // handle release event
-    if (pressed_counter < longpress_len)
-    event = EV_SHORTPRESS;
-    else
-    event = EV_LONGPRESS;
-  }
-  else
-  event = EV_NONE;
-
-  // update press running duration
-  if (now_pressed)
-  ++pressed_counter;
-  else
-  pressed_counter = 0;
-
-  // remember state, and we're done
-  was_pressed = now_pressed;
-  return event;
-}
-
-int ButtonHandler::is_pressed(){
-  return was_pressed;
-}
-
-
-// Instantiate button objects
-ButtonHandler lockbutton(lockswitch);
-ButtonHandler closebutton(closingswitch);
-ButtonHandler openbutton(nfcswitch);
-
-
 void setup() {
+ byte i;
 
-  // Open serial communications
-  Serial.begin(9600);
+ // set up serial port
+ Serial.begin(9600);
 
-  // init buttons pins
-  lockbutton.init();
-  closebutton.init();
+ // Make input & enable pull-up resistors on switch pins
+ for (i=0; i< NUMBUTTONS; i++) {
+   pinMode(buttons[i], INPUT);
+   digitalWrite(buttons[i], HIGH);
+ }
 
-  // send an intro:
-  Serial.println("\n\n Mastro di chiavi [Booting...]\n");
-  Serial.println();
+ // send an intro:
+ Serial.println("\n\n Mastro di chiavi [Booting...]\n");
+ Serial.println();
 
-  //Initialize the led ring
-  strip.begin();
-  strip.show();
+ //Initialize the led ring
+ strip.begin();
+ strip.show();
 
-  // Initialize the stepper motor
-  pinMode(pwmA, OUTPUT);
-  pinMode(pwmB, OUTPUT);
-  pinMode(brakeA, OUTPUT);
-  pinMode(brakeB, OUTPUT);
+ // Initialize the stepper motor
+ pinMode(pwmA, OUTPUT);
+ pinMode(pwmB, OUTPUT);
+ pinMode(brakeA, OUTPUT);
+ pinMode(brakeB, OUTPUT);
 
+ // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
+ stepperMotor.setSpeed(65);
 
-  // Set the stepper rotation speed a good value found with a potentiometer is ~ 65/75 rpm
-  stepperMotor.setSpeed(65);
+ //Booting routine
+ theaterChase(strip.Color(  0,   0, 127), 50, 25); // Blue
+ color_wipe(strip.Color(0, 0, 0), 5);    // Black/off
 
-  //Booting routine
-  theaterChase(strip.Color(  0,   0, 127), 50, 50); // Blue
-  color_wipe(strip.Color(0, 0, 0), 50);    // Black/off
+ // send an intro:
+ Serial.println("\nMastro di chiavi [Ready]\n");
+ Serial.println();
 
-  //Randomize seed
-  randomSeed(analogRead(0));
-
-  //Some visual feedback on the state of the lock
-  if(lockbutton.is_pressed() == 1 ){
-    fade_up(200, 10, 40, 0, 0); //hi red
-  }else{
-    fade_up(200, 10, 0, 40, 0); //hi green
-  }
-
-  // send an intro:
-  Serial.println("\n\n Mastro di chiavi [Ready]\n");
-  Serial.println();
 }
-
 
 
 void loop() {
+ check_switches();
+ do_actions();
+}
 
-  // handle lock switch
-  int lockevent = lockbutton.handle();
+void check_switches()
+{
+ static byte previousstate[NUMBUTTONS];
+ static byte currentstate[NUMBUTTONS];
+ static long lasttime;
+ byte index;
+ if (millis() < lasttime) {
+    lasttime = millis(); // we wrapped around, lets just try again
+ }
 
-  // handle close switch
-  int closeevent = closebutton.handle();
+ if ((lasttime + DEBOUNCE) > millis()) {
+   return; // not enough time has passed to debounce
+ }
+ // ok we have waited DEBOUNCE milliseconds, lets reset the timer
+ lasttime = millis();
 
-  //If you press long on the close button
-  if (closeevent == EV_LONGPRESS){
+ for (index = 0; index < NUMBUTTONS; index++) {
+   justpressed[index] = 0;       // when we start, we clear out the "just" indicators
+   justreleased[index] = 0;
 
-    // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
-      Serial.println("Lockswitch is down, so the door is already closed");
-      theaterChase(random_color(),50,25);
-      fade_up(200, 10, 40, 0, 0); //hi red
-    }else{
-      Serial.println("Lockswitch is up, so we must close the door");
-      timer_before_closing();
-      turn_key("close");
-      Serial.println("Door closed");
-    }
+   currentstate[index] = digitalRead(buttons[index]);   // read the button
+   if (currentstate[index] == previousstate[index]) {
+     if ((pressed[index] == LOW) && (currentstate[index] == LOW)) {
+         // just pressed
+         justpressed[index] = 1;
+     }
+     else if ((pressed[index] == HIGH) && (currentstate[index] == HIGH)) {
+         // just released
+         justreleased[index] = 1;
+     }
+     pressed[index] = !currentstate[index];  // remember, digital HIGH means NOT pressed
+   }
+   //Serial.println(pressed[index], DEC);
+   previousstate[index] = currentstate[index];   // keep a running tally of the buttons
+ }
+}
 
-  }
+void do_actions(){
+ if (justpressed[1]){
+   Serial.println("Segnale di apertura (NFC  Pulsante)");
+   if( lockclosed() == true ){
+     Serial.println("La porta e' chiusa, la devo aprire...");
+     turn_key("open");
+     effects_after_opening();
+   }else{
+     Serial.println("La porta e' gia' aperta, non devo fare niente!");
+     theaterChase(random_color(),50,25);
+     fade_up(200, 10, 0, 40, 0); //hi green
+   }
+ }
 
-  // handle open signal
-  int openevent = openbutton.handle();
+ if (justpressed[2]){
+   Serial.println("Segnale di chiusura ricevuto...");
+   if ( lockclosed() == false ){
+     Serial.println("La porta e' aperta, la devo chiudere...");
+     fade_up(100, 20, 238, 238, 0); //yellow
+     color_wipe(orange, timer_before_closing_duration); // orange
+     turn_key("close");
+     Serial.println("Door closed");
 
-  //If we get a signal from the CAME
-  if( openevent == EV_SHORTPRESS){
-    // we check if the lock is already closed
-    if(lockbutton.is_pressed() == 1){
-      Serial.println("Lockswitch is down, the door is closed and we're gonna open it");
-      turn_key("open");
-      Serial.println("Door opened");
-      }else{
-        Serial.println("Lockswitch is up, so the door is already open");
-        theaterChase(random_color(),50,25);
-        fade_up(200, 10, 0, 40, 0); //hi green
-      }
-  }
-
-  // add newline sometimes
-  static int counter = 0;
-  if ((++counter & 0x1f) == 0)
-  Serial.println();
-
-  delay(DELAY);
+   }else{
+     Serial.println("La porta e' gia' chiusa, non devo fare niente.");
+     theaterChase(random_color(),50,25);
+     fade_up(200, 10, 40, 0, 0); //hi red
+   }
+ }
 
 }
 
+boolean lockclosed(){
+  check_switches();
+  if(pressed[0]){
+    Serial.println("Paletto aperto!");
+    return false;
+  }else{
+    Serial.println("Paletto chiuso!");
+    return true;
+  }
+}
+
 void turn_key(String direction){
-
   uint16_t i,j;
-
-  //Two turns...
   for( j=0; j<2; j++){
     for (i=0; i< strip.numPixels();i++){
       switch(j){
@@ -235,7 +180,6 @@ void turn_key(String direction){
           }else{
             strip.setPixelColor(i, low_green);
           }
-
         break;
 
         case 1:
@@ -247,33 +191,20 @@ void turn_key(String direction){
         break;
 
       }
-
       digitalWrite(pwmA, HIGH);
       digitalWrite(pwmB, HIGH);
       digitalWrite(brakeA, LOW);
       digitalWrite(brakeB, LOW);
-
       if(direction == "close"){
           stepperMotor.step(-(STEPS / strip.numPixels()));
         }else{
           stepperMotor.step(STEPS / strip.numPixels());
       }
-      
       digitalWrite(pwmA, LOW);
       digitalWrite(pwmB, LOW);
       digitalWrite(brakeA, HIGH);
       digitalWrite(brakeB, HIGH);
-
       strip.show();
-    }
-  }
-
-  //...and an half
-  for (int k=0; k < TURN_FIXTURE; k++){
-    if(direction == "close"){
-      stepperMotor.step(-1);
-    }else{
-        stepperMotor.step(1);
     }
 
   }
@@ -284,8 +215,7 @@ void turn_key(String direction){
       fade_up(200, 10, 0, 40, 0); //hi green
   }
 
-}//turn_key
-
+}
 
 // Function to get some random color, to be used with strip.setPixelColor(i, random_color());
 uint32_t random_color(){
@@ -294,39 +224,28 @@ uint32_t random_color(){
   return rnd_color;
 }
 
-// This is the function that is fired before the lock gets closed, for some fancy effects on the ledring
-void timer_before_closing(){
-
+// Function to get some fancy led effects after opening the door
+void effects_after_opening(){
   randomSeed(analogRead(0));
-  uint32_t trick = random(1,6);
-
+  uint32_t trick = random(1,5);
   switch(trick){
     case 1:
-      theaterChaseRainbow(50); //A 50ms delay corresponds to ~40 sec loop
+      theaterChaseRainbow(5); //A 50ms delay corresponds to ~40 sec loop
     break;
 
     case 2:
-      theaterChase(random_color(),50,250); //A 50ms delay with 250 cycles corresponds to ~40 sec loop
+      theaterChase(random_color(),50,25); //A 50ms delay with 250 cycles corresponds to ~40 sec loop
     break;
 
     case 3:
-      rainbow(150); //A 150ms delay corresponds to ~40 sec loop
+      rainbow(15); //A 150ms delay corresponds to ~40 sec loop
     break;
 
     case 4:
-      rainbowCycle(50); //A 50ms delay corresponds to ~40 sec loop
+      rainbowCycle(5); //A 50ms delay corresponds to ~40 sec loop
     break;
-
-    case 5:
-      fade_up(100, 20, 238, 238, 0); //yellow
-      color_wipe(orange, timer_before_closing_duration); // orange
-    break;
-
   }
-
-
-
-}//timer_before_closing
+}
 
 
 // fade_up - fade up to the given color
@@ -340,9 +259,7 @@ void fade_up(int num_steps, int wait, int R, int G, int B) {
    strip.show();
    delay(wait);
    }
-} // fade_up
-
-
+}
 
 // Fill the dots one after the other with a color
 void color_wipe(uint32_t c, int wait) {
@@ -351,7 +268,7 @@ void color_wipe(uint32_t c, int wait) {
       strip.show();
       delay(wait);
   }
-} //color_wipe
+}
 
 void rainbow(uint8_t wait) {
   uint16_t i, j;
@@ -427,4 +344,4 @@ uint32_t Wheel(byte WheelPos) {
         WheelPos -= 170;
         return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
       }
-    }
+}
