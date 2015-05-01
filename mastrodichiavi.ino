@@ -152,7 +152,7 @@ if (justpressed[2]){
    color_wipe(orange, timer_before_closing_duration); // orange
    turn_key("close");
    Serial.println("Door closed");
-
+   //TODO: qui aggiungere il doppio fade_up veloce come diceva il muzzi
  }else{
    Serial.println("La porta e' gia' chiusa, non devo fare niente.");
    theaterChase(random_color(),50,15);
